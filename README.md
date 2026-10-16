@@ -1,42 +1,129 @@
-# CAP Bookshop - Training Example
+# Bookshop
 
-The Bookshop service built in the SAP CAP (Cloud Application Programming Model) getting-started session.
+A sample book-catalog application built with the SAP Cloud Application Programming Model (CAP). It exposes books, authors, and reviews through an OData v4 service and includes a stock-aware order action.
 
-## Project structure
+## Features
 
-| Folder / File | Purpose |
-|---|---|
-| `db/schema.cds` | Domain model: `Books` and `Authors` |
-| `db/data/*.csv` | Sample data, loaded automatically on startup |
-| `srv/cat-service.cds` | `CatalogService` exposing Books, Authors and the `submitOrder` action |
-| `srv/cat-service.js` | Custom logic: discount label on Books and the `submitOrder` handler |
+- Browse books and authors through the catalog service.
+- View a book's author and other related data using OData query options.
+- Submit an order that reduces stock only when enough copies are available.
+- Automatically append an `11% off!` label to the titles of books with stock greater than 100.
+- Create book reviews; ratings must be whole numbers from 1 to 5.
+- Use the included Python script to post sample reviews and calculate average ratings.
 
-## Prerequisites
+## Requirements
 
-- Node.js 22 or 24 LTS
-- CAP development kit: `npm i -g @sap/cds-dk`
-- VS Code with the *SAP CDS Language Support* extension
+- Node.js 20 or later
+- npm
+- Python 3 and the `requests` package (only if running `post_reviews.py`)
 
-## Run it
+## Run locally
+
+From the project directory, install dependencies and start the CAP server:
 
 ```sh
-npm i
+npm install
+npm start
+```
+
+The service starts at `http://localhost:4004`. For development with automatic reload, install the CAP development kit and run `cds watch`:
+
+```sh
+npm install --global @sap/cds-dk
 cds watch
 ```
 
-Then open:
+CAP loads the sample CSV data from `db/data` when the service starts with the default local database configuration.
 
-- http://localhost:4004/odata/v4/catalog/Books
-- http://localhost:4004/odata/v4/catalog/Books?$filter=stock gt 100&$expand=author
-- http://localhost:4004/odata/v4/catalog/$metadata
+## Catalog API
 
-## Homework
+The OData v4 service is available at:
 
-1. Add a `Reviews` entity (rating, comment) linked to `Books`.
-2. Add a `before('CREATE', 'Reviews')` handler that rejects ratings outside 1-5.
-3. Write a Python script that posts three reviews and prints the average rating per book.
+```text
+http://localhost:4004/odata/v4/catalog
+```
 
-## Learn more
+Useful endpoints:
 
-- CAP documentation: https://cap.cloud.sap
-- Sample code: https://github.com/SAP-samples/cloud-cap-samples
+| Endpoint | Description |
+|---|---|
+| `/Books` | List books |
+| `/Books(1)` | Retrieve a book by ID |
+| `/Authors` | List authors |
+| `/Reviews` | List reviews |
+| `/$metadata` | View the OData service metadata |
+
+For example, list books with stock greater than 100 and include their authors:
+
+```text
+http://localhost:4004/odata/v4/catalog/Books?$filter=stock%20gt%20100&$expand=author
+```
+
+### Submit an order
+
+`submitOrder` accepts a book ID and a quantity. For example:
+
+```sh
+curl -X POST http://localhost:4004/odata/v4/catalog/submitOrder \
+  -H "Content-Type: application/json" \
+  -d "{\"book\":1,\"quantity\":2}"
+```
+
+The action subtracts the requested quantity from stock when sufficient stock is available. If there is not enough stock, the service responds with HTTP `409 Conflict`.
+
+### Create a review
+
+Create a review by posting its rating, comment, and related book ID:
+
+```sh
+curl -X POST http://localhost:4004/odata/v4/catalog/Reviews \
+  -H "Content-Type: application/json" \
+  -d "{\"rating\":5,\"comment\":\"Excellent book!\",\"book_ID\":1}"
+```
+
+Ratings outside the integer range 1–5 are rejected with HTTP `400 Bad Request`.
+
+## Optional: post sample reviews
+
+With the CAP server running, install the Python dependency and run the included script:
+
+```sh
+python -m pip install requests
+python post_reviews.py
+```
+
+The script posts three reviews for books returned by the service and prints the average for each reviewed title. Running it again creates additional reviews.
+
+Example output:
+
+```text
+Review created for: Wuthering Heights
+Review created for: Wuthering Heights
+Review created for: The Raven -- 11% off!
+
+Average ratings:
+Wuthering Heights: 4.50/5
+The Raven -- 11% off!: 3.00/5
+```
+
+The exact titles and averages depend on the books returned by the service and the reviews posted during that run.
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `db/schema.cds` | Books, authors, and reviews data model |
+| `db/data/*.csv` | Sample books and authors |
+| `srv/cat-service.cds` | Catalog service entities and `submitOrder` action |
+| `srv/cat-service.js` | Order handling, stock discounts, and review validation |
+| `post_reviews.py` | Optional script to post reviews and calculate averages |
+| `package.json` | Node.js dependencies and start command |
+
+## License
+
+This project is marked `UNLICENSED` in `package.json`; no reuse or distribution license is specified.
+
+## References
+
+- [SAP Cloud Application Programming Model](https://cap.cloud.sap)
+- [SAP CAP sample projects](https://github.com/SAP-samples/cloud-cap-samples)

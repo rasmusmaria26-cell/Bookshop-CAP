@@ -14,3 +14,11 @@ entity Authors {
   name   : String(111);
   books  : Association to many Books on books.author = $self;
 }
+
+entity Reviews : managed {
+  key ID : Integer;
+  rating : Integer;
+  comment : String(1000);
+  book : Association to Books;
+}
+
