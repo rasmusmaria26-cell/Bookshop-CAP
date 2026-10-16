@@ -94,6 +94,20 @@ python post_reviews.py
 
 The script posts three reviews for books returned by the service and prints the average for each reviewed title. Running it again creates additional reviews.
 
+Example output:
+
+```text
+Review created for: Wuthering Heights
+Review created for: Wuthering Heights
+Review created for: The Raven -- 11% off!
+
+Average ratings:
+Wuthering Heights: 4.50/5
+The Raven -- 11% off!: 3.00/5
+```
+
+The exact titles and averages depend on the books returned by the service and the reviews posted during that run.
+
 ## Project structure
 
 | Path | Purpose |
